@@ -54,6 +54,13 @@ local Commands = {
     },
 }
 
+for _, command in ipairs(Commands) do
+    -- 0 = server install, 1 = user install
+    command.integration_types = {0, 1}
+    -- usable in servers (0), bot DMs (1), and group/other DMs (2)
+    command.contexts = {0, 1, 2}
+end
+
 local function ColorInt(color: {r: number, g: number, b: number}): number
     return color.r * 65536 + color.g * 256 + color.b
 end

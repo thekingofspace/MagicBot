@@ -1,0 +1,7 @@
+{
+    "languageMode": "nonstrict",
+    "aliases": {
+        "root": "./roots",
+        "src": "./src"
+    }
+}

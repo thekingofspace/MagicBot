@@ -1,0 +1,1 @@
+Spells.MD is generated via AI, my code however is by me. I just had AI assist in documenting it. (tho it did help on minor tasks like fixing text since I suck at writing, so for spell descriptions.)

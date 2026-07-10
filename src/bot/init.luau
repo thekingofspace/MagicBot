@@ -430,13 +430,13 @@ local function HandleExample(client, interaction)
 end
 
 local function RegisterCommands(client, appId: string, guild: string?)
-    local scopes = {}
+    local scopes = {
+        {path = `applications/{appId}/commands`, body = Commands :: any},
+    }
 
+    -- Clear any old guild-scoped copies so commands don't appear twice in that server
     if guild and guild ~= "" then
-        table.insert(scopes, {path = `applications/{appId}/guilds/{guild}/commands`, body = Commands :: any})
-        table.insert(scopes, {path = `applications/{appId}/commands`, body = "[]" :: any})
-    else
-        table.insert(scopes, {path = `applications/{appId}/commands`, body = Commands :: any})
+        table.insert(scopes, {path = `applications/{appId}/guilds/{guild}/commands`, body = "[]" :: any})
     end
 
     for _, scope in ipairs(scopes) do

@@ -98,6 +98,26 @@ module.Registry = {
             cv:line(x - size * 0.52, y, x + size * 0.52, y, color, 2)
         end,
     },
+    ["="] = {
+        Name = "Radiate",
+        Verb = "radiates",
+        Fallback = "in every direction",
+        Draw = function(cv, x, y, size, color)
+            cv:circle(x, y, math.max(2, size * 0.09), color)
+            for _, dir in ipairs({-1, 1}) do
+                for ring = 1, 2 do
+                    local r = size * (0.14 + 0.22 * ring)
+                    local points = {}
+                    local steps = 8
+                    for i = 0, steps do
+                        local a = -math.pi * 0.28 + math.pi * 0.56 * i / steps
+                        table.insert(points, {x + dir * r * math.cos(a), y + r * math.sin(a)})
+                    end
+                    cv:polyline(points, color, 2)
+                end
+            end
+        end,
+    },
     ["-"] = {
         Name = "Hoar",
         Verb = "freezes",

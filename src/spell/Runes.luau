@@ -63,6 +63,8 @@ module.Registry = {
         Hint = "Transmutes. Bind an element for the end state (~~~G turns its targets to stone)."},
     ["-"] = {Letter = "-", Name = "Hoar", Class = "aspect",
         Hint = "Frost. A working that chills — aim it with targets (---O freezes another), bind an element to freeze that (---W freezes water). On a Query ring it triggers when cold sets in."},
+    ["="] = {Letter = "=", Name = "Radiate", Class = "aspect",
+        Hint = "Radiates. Bind an element to pour that energy outward (===% radiates decay); inject a bottled circle to send it marked (==4 with 4{ }); aim it at the offering (==_) to send that along. On a Query ring (Q=) the circle wakes when a radiance reaches it — add an element or mark to hear only that one (Q=%, Q=4). A radiance finds every listening circle, however far."},
 
     V = {Letter = "V", Name = "Vessel", Class = "target", Target = "vessel",
         Hint = "A container. VV marks two of them."},

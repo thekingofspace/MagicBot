@@ -68,7 +68,20 @@ local function RunShard(self: Types.Localizer, Shard: number, Settle: (ReadyData
         local Existing = self.__ShardInfo[Shard]
         local ResumeURL = if WantResume and Existing then Existing.ResumeGate else nil
 
-        local Gate = self:__GetGateway(Shard, ResumeURL)
+        local ConnectOk, Gate = pcall(function()
+            return self:__GetGateway(Shard, ResumeURL)
+        end)
+
+        if not ConnectOk then
+            if ResumeURL then
+                WantResume = false -- the resume gateway may be stale; fall back to the main gateway
+            end
+
+            stdio.ewrite(`[nocturn] Shard {Shard} could not reach the gateway: {Gate}\n`)
+            task.wait(2 + math.random() * 3)
+            continue
+        end
+
         local Info = self.__ShardInfo[Shard]
 
         -- Discord opens with Hello (op 10) carrying the heartbeat interval
@@ -164,7 +177,8 @@ local function RunShard(self: Types.Localizer, Shard: number, Settle: (ReadyData
                     Info.SessionID = Packet.d.session_id
 
                     if Packet.d.resume_gateway_url then
-                        Info.ResumeGate = Packet.d.resume_gateway_url .. GatewayQuery
+                        -- resume_gateway_url has no path; without the "/" the handshake request line is malformed and Discord replies 400
+                        Info.ResumeGate = Packet.d.resume_gateway_url:gsub("/+$", "") .. "/" .. GatewayQuery
                     end
 
                     table.clear(Info.Guilds)
@@ -332,7 +346,23 @@ return {
             return self
         end
 
-        local GatewayInfo = self:RestSend("GET", "gateway/bot")
+        local GatewayOk, GatewayInfo
+        for Attempt = 1, MaxRestRetries do
+            GatewayOk, GatewayInfo = pcall(self.RestSend, self, "GET", "gateway/bot")
+
+            if GatewayOk then
+                break
+            end
+
+            stdio.ewrite(`[nocturn] Could not fetch gateway info (attempt {Attempt}/{MaxRestRetries}): {GatewayInfo}\n`)
+            task.wait(2 * Attempt)
+        end
+
+        if not GatewayOk then
+            stdio.ewrite("[nocturn] Start aborted: Discord's gateway info was unreachable.\n")
+            return self
+        end
+
         self.__ShardRec = GatewayInfo.shards
 
         if self.Shards == 0 then
@@ -381,7 +411,15 @@ return {
                 Pending -= 1
             end
 
-            self:t_SpawnProcess(RunShard, self, Shard, Settle)
+            self:t_SpawnProcess(function()
+                local Ok, Err = pcall(RunShard, self, Shard, Settle)
+
+                if not Ok then
+                    stdio.ewrite(`[nocturn] Shard {Shard} loop crashed: {Err}\n`)
+                end
+
+                Settle(nil) -- even a crashed shard must settle, or Start waits forever
+            end)
 
             if MaxConcurrency == 1 and I ~= self.Shards then
                 task.wait(IdentifyDelay)

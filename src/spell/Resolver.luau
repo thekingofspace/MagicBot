@@ -555,6 +555,7 @@ local AspectTriggers = {
     X = "a bond is woven nearby",
     ["~"] = "something changes nearby",
     ["-"] = "cold sets in nearby",
+    ["="] = "a radiance washes over it",
 }
 
 local TriggerBlocks = {
@@ -940,6 +941,7 @@ local function AnalyzeLayer(spell: Parser.Spell): (LayerPlan, Totals)
         local elementName: string? = nil
         local selfIndex: number? = nil
         local digitValue: string? = nil
+        local radiateIndex: number? = nil
 
         for i, run in ipairs(ringRuns) do
             local ringEntry = Runes.Get(run.letter)
@@ -948,12 +950,25 @@ local function AnalyzeLayer(spell: Parser.Spell): (LayerPlan, Totals)
                 elementIndex = i
             elseif run.letter == "S" and not selfIndex then
                 selfIndex = i
+            elseif run.letter == "=" and not radiateIndex then
+                radiateIndex = i
             elseif string.match(run.letter, "%d") and not digitValue then
                 digitValue = run.letter
             end
         end
 
-        if elementName and selfIndex then
+        if radiateIndex then
+            local qualifier = ""
+            if elementName then
+                qualifier = ` of {string.lower(elementName)}`
+                senseConsumed[elementIndex :: number] = true
+            end
+            if digitValue then
+                qualifier ..= ` marked {digitValue}`
+            end
+            SetSense(totals, negatedQuery, `a radiance{qualifier} reaches it`)
+            senseConsumed[radiateIndex] = true
+        elseif elementName and selfIndex then
             SetSense(totals, negatedQuery, `it outweighs the {string.lower(elementName)}`)
             senseConsumed[elementIndex :: number] = true
             senseConsumed[selfIndex] = true

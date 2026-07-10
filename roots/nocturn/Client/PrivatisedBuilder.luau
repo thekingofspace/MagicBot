@@ -28,32 +28,37 @@ return {
     end,
 
     Identify = function(self: Types.Localizer, Gate: WebSocket, Shard: number)
-        Gate:send(serde.encode("json", {
-            op = 2,
-            d = {
-                token = self.Token,
-                intents = self.Intents,
-                properties = {
-                    os = process.platform,
-                    browser = "nocturn",
-                    device = "nocturn",
+        -- send may throw if the socket dropped right after connecting; the read loop handles the reconnect
+        pcall(function()
+            Gate:send(serde.encode("json", {
+                op = 2,
+                d = {
+                    token = self.Token,
+                    intents = self.Intents,
+                    properties = {
+                        os = process.platform,
+                        browser = "nocturn",
+                        device = "nocturn",
+                    },
+                    shard = { Shard, self.Shards },
                 },
-                shard = { Shard, self.Shards },
-            },
-        }))
+            }))
+        end)
     end,
 
     Resume = function(self: Types.Localizer, Gate: WebSocket, Shard: number)
         local Info = self.__ShardInfo[Shard]
 
-        Gate:send(serde.encode("json", {
-            op = 6,
-            d = {
-                token = self.Token,
-                session_id = Info.SessionID,
-                seq = Info.RST,
-            },
-        }))
+        pcall(function()
+            Gate:send(serde.encode("json", {
+                op = 6,
+                d = {
+                    token = self.Token,
+                    session_id = Info.SessionID,
+                    seq = Info.RST,
+                },
+            }))
+        end)
 
         self:SpawnEvent("Resume", nil, Shard)
     end,

@@ -16,7 +16,7 @@ export type Spell = {
 }
 
 local MaxLength = 200
-local SymbolRunes = "*@~#()&.!^%/_:-?<$>"
+local SymbolRunes = "*@~#()&.!^%/_:-?<$>="
 
 local module = {}
 

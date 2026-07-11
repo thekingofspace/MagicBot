@@ -32,6 +32,7 @@ export type LayerPlan = {
     spread: number,
     description: string,
     phial: string?,
+    holdsPlace: boolean?,
     trigger: string?,
     unstable: boolean,
 }
@@ -43,6 +44,7 @@ export type Working = {
     power: number,
     element: string?,
     targets: {[string]: number},
+    place: string?,
 }
 
 export type Corruption = {
@@ -66,6 +68,7 @@ export type Effect = {
     Layers: number,
     Repeats: number,
     Endless: boolean,
+    Chain: number,
     Sustain: number,
     Delay: number,
     Conditional: boolean,
@@ -105,6 +108,7 @@ type Totals = {
     range: number,
     repeats: number,
     loopN: number,
+    chainN: number,
     sustain: number,
     delay: number,
     conditionN: number,
@@ -141,6 +145,7 @@ local function NewTotals(): Totals
         range = 0,
         repeats = 0,
         loopN = 0,
+        chainN = 0,
         sustain = 0,
         delay = 0,
         conditionN = 0,
@@ -247,6 +252,56 @@ local function RankElements(totals: Totals): {{name: string, power: number}}
         return a.power > b.power
     end)
     return ranked
+end
+
+local function SpecialWorkingLine(working: Working, phrase: string?, totals: Totals): string?
+    local name = working.Name
+    local element = working.element
+    local destination = if working.place then ` to {working.place}` else ""
+
+    if name == "Mend" then
+        if element == "Life" then
+            return `Mend knits life back into {phrase or "whatever it is cast upon"}`
+        elseif element == "Time" then
+            return `Mend winds {phrase or "what it touches"} back to its former state`
+        elseif element == "Mind" then
+            return `Mend makes whole the mind of {phrase or "what it touches"}`
+        end
+        return nil
+    end
+
+    if name == "Stride" then
+        local span = ""
+        if totals.range > 0 then
+            span = `, {totals.range} {if totals.range == 1 then "span" else "spans"} along its aim`
+        end
+        if element == "Space" then
+            return `Stride steps {phrase or "the circle's burden"} through a fold in space{destination}{span}`
+        elseif element then
+            return `Stride carries {string.lower(element)} within {phrase or "what it touches"}{destination}{span}`
+        end
+        return `Stride moves {phrase or "what it touches"}{destination}{span}`
+    end
+
+    if element == "Mind" then
+        if name == "Craft" then
+            return `Craft shapes what the caster holds in mind{if phrase then ` for {phrase}` else ""}`
+        elseif name == "Doom" then
+            return `Doom unmakes memories within {phrase or "what it touches"}`
+        elseif name == "Fathom" then
+            return `Fathom reads the thoughts of {phrase or "whoever draws near"}`
+        elseif name == "Kindred" then
+            return `Kindred copies the thoughts of {phrase or "its target"}`
+        elseif name == "Missive" then
+            return `Missive carries a thought straight into the mind of {phrase or "a distant ear"}`
+        elseif name == "Weave" then
+            return `Weave links the minds of {phrase or "what it binds"}`
+        elseif name == "Flux" then
+            return `Flux remakes {phrase or "what it touches"} into what the caster pictures`
+        end
+    end
+
+    return nil
 end
 
 local function BuildEffect(totals: Totals): Effect
@@ -381,8 +436,17 @@ local function BuildEffect(totals: Totals): Effect
         table.insert(lines, Elements.Get(elementName).Describe(ctx))
     end
 
+    local hasStride = false
     for _, working in ipairs(totals.workings) do
+        if working.Name == "Stride" then
+            hasStride = true
+        end
         local phrase = TargetsPhrase(working.targets) or TargetsPhrase(totals.targets)
+        local special = SpecialWorkingLine(working, phrase, totals)
+        if special then
+            table.insert(lines, `{special} (power {working.power}).`)
+            continue
+        end
         local object: string
         if working.element and phrase then
             object = `{string.lower(working.element)} within {phrase}`
@@ -452,8 +516,16 @@ local function BuildEffect(totals: Totals): Effect
     if totals.coil > 0 then
         table.insert(lines, `It coils {totals.coil} {if totals.coil == 1 then "turn" else "turns"} along its path.`)
     end
-    if totals.range > 0 then
+    if totals.range > 0 and not hasStride then
         table.insert(lines, `It lands {totals.range} {if totals.range == 1 then "span" else "spans"} out.`)
+    end
+
+    if totals.chainN > 0 then
+        if totals.motes > 0 then
+            table.insert(lines, `Where each mote lands, the spell casts itself anew — up to {totals.chainN} {if totals.chainN == 1 then "chain" else "chains"} apiece.`)
+        else
+            table.insert(lines, `Where it lands, the spell casts itself anew — up to {totals.chainN} {if totals.chainN == 1 then "chain" else "chains"}.`)
+        end
     end
 
     if totals.loopN > 0 then
@@ -510,6 +582,7 @@ local function BuildEffect(totals: Totals): Effect
         Layers = totals.layers,
         Repeats = totals.repeats,
         Endless = totals.loopN > 0,
+        Chain = totals.chainN,
         Sustain = totals.sustain,
         Delay = totals.delay,
         Conditional = totals.conditionN > 0,
@@ -548,6 +621,8 @@ end
 local AspectTriggers = {
     C = "something is crafted nearby",
     D = "something is unmade nearby",
+    ["+"] = "something nearby is made whole",
+    [","] = "something nearby is carried away",
     L = "light falls upon it",
     F = "it is sought",
     K = "its likeness appears",
@@ -610,6 +685,8 @@ local function ApplyRun(totals: Totals, letter: string, count: number, hasQuery:
             totals.repeats += count
         elseif entry.Flow == "loop" then
             totals.loopN += count
+        elseif entry.Flow == "chain" then
+            totals.chainN += count
         elseif entry.Flow == "sustain" then
             totals.sustain += count
         elseif entry.Flow == "delay" then
@@ -625,6 +702,7 @@ local function ApplyRun(totals: Totals, letter: string, count: number, hasQuery:
         if hasQuery then
             local phrase = if entry.Element == "Time"
                 then "its hour comes"
+                elseif entry.Element == "Mind" then "a thinking mind draws near"
                 else `{string.lower(entry.Element :: string)} is found`
             SetSense(totals, negated, phrase)
         else
@@ -696,6 +774,7 @@ local function AnalyzeLayer(spell: Parser.Spell): (LayerPlan, Totals)
 
             if digit then
                 subPlan.phial = digit
+                subPlan.holdsPlace = (subTotals.targets.place or 0) > 0
                 phials[digit] = subTotals
             else
                 MergeTotals(totals, subTotals)
@@ -703,11 +782,11 @@ local function AnalyzeLayer(spell: Parser.Spell): (LayerPlan, Totals)
         end
     end
 
-    local function Inject(digit: string): string?
+    local function Inject(digit: string): (string?, boolean)
         local phial = phials[digit]
         if not phial then
             table.insert(totals.ringNotes, `Nothing fills phial {digit} — the injection fizzles.`)
-            return nil
+            return nil, false
         end
         usedPhials[digit] = true
 
@@ -741,7 +820,7 @@ local function AnalyzeLayer(spell: Parser.Spell): (LayerPlan, Totals)
         totals.coil += phial.coil
         totals.instability += phial.instability
 
-        return tintName
+        return tintName, (phial.targets.place or 0) > 0
     end
 
     for _, part in ipairs(spell.parts) do
@@ -759,6 +838,8 @@ local function AnalyzeLayer(spell: Parser.Spell): (LayerPlan, Totals)
             for _, run in ipairs(group.runs) do
                 if run.letter == "$" then
                     scale += run.count
+                elseif run.letter == "'" then
+                    table.insert(parts, "whatever the caster's mind pictures")
                 else
                     local shape = FormShapes[run.letter] or string.lower(Runes.Get(run.letter).Name)
                     table.insert(parts, if run.count > 1 then `{shape} ×{run.count}` else shape)
@@ -784,12 +865,16 @@ local function AnalyzeLayer(spell: Parser.Spell): (LayerPlan, Totals)
         end
 
         local bound: string? = nil
+        local placePhial: string? = nil
         local groupTargets: {[string]: number} = {}
         for letter, count in pairs(modifiers) do
             if string.match(letter, "%d") then
-                local tintElement = Inject(letter)
+                local tintElement, holdsPlace = Inject(letter)
                 if tintElement and not bound then
                     bound = tintElement
+                end
+                if holdsPlace and not placePhial then
+                    placePhial = letter
                 end
                 continue
             end
@@ -864,6 +949,7 @@ local function AnalyzeLayer(spell: Parser.Spell): (LayerPlan, Totals)
                 power = power,
                 element = bound,
                 targets = groupTargets,
+                place = if placePhial then `the place held in phial {placePhial}` else nil,
             })
         elseif entry.Class == "target" and entry.Target then
             glyph.kind = "target"
@@ -924,6 +1010,7 @@ local function AnalyzeLayer(spell: Parser.Spell): (LayerPlan, Totals)
     local hasQuery = false
     local negatedQuery = false
     local consumedNull: {[number]: boolean} = {}
+    local counterIndex: number? = nil
     for i, run in ipairs(ringRuns) do
         if run.letter == "Q" then
             hasQuery = true
@@ -932,10 +1019,18 @@ local function AnalyzeLayer(spell: Parser.Spell): (LayerPlan, Totals)
                 negatedQuery = true
                 consumedNull[i - 1] = true
             end
+            local following = ringRuns[i + 1]
+            if following and following.letter == ";" and not counterIndex then
+                counterIndex = i + 1
+            end
         end
     end
 
     local senseConsumed: {[number]: boolean} = {}
+    if counterIndex then
+        SetSense(totals, negatedQuery, "it is countered")
+        senseConsumed[counterIndex] = true
+    end
     if hasQuery then
         local elementIndex: number? = nil
         local elementName: string? = nil
@@ -1062,7 +1157,11 @@ function module.Resolve(spell: Parser.Spell): (Effect, LayerPlan)
 
     for _, sub in ipairs(plan.subs) do
         if sub.phial then
-            table.insert(effect.Notes, `Phial {sub.phial}: {sub.description}`)
+            if sub.holdsPlace and sub.element == nil then
+                table.insert(effect.Notes, `Phial {sub.phial}: it holds fast to the spot where it was drawn.`)
+            else
+                table.insert(effect.Notes, `Phial {sub.phial}: {sub.description}`)
+            end
         elseif sub.trigger then
             table.insert(effect.Notes, `Payload: {sub.description}`)
         else

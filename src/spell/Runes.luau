@@ -41,6 +41,8 @@ module.Registry = {
         Hint = "Destruction. Alone it cleaves; merged into any other spell it corrupts it. With decay it becomes Oblivion."},
     [":"] = {Letter = ":", Name = "Aeon", Class = "element", Element = "Time",
         Hint = "Time. Sigil or binding — slow it, age it, hold it. Mixes with every element."},
+    ["'"] = {Letter = "'", Name = "Muse", Class = "element", Element = "Mind",
+        Hint = "Thought. Bind it to a working to work upon minds — seek to read them (FFF'O), unmake to erase (DDD'O), transmute to rewrite (~~~'O), craft to shape what you picture (CCC'). In a shapeform ($') the body is drawn straight from the caster's mind. On a Query ring (Q') the circle wakes when a thinking mind draws near."},
 
     R = {Letter = "R", Name = "Reach", Class = "modifier",
         Hint = "On a glyph: stretches it across two border positions. As its own cluster or on a ring: widens the whole spell."},
@@ -63,6 +65,10 @@ module.Registry = {
         Hint = "Transmutes. Bind an element for the end state (~~~G turns its targets to stone)."},
     ["-"] = {Letter = "-", Name = "Hoar", Class = "aspect",
         Hint = "Frost. A working that chills — aim it with targets (---O freezes another), bind an element to freeze that (---W freezes water). On a Query ring it triggers when cold sets in."},
+    ["+"] = {Letter = "+", Name = "Mend", Class = "aspect",
+        Hint = "Restores. Bind life to heal flesh (+++J), bind time to wind a thing back to its former state (+++:). Aim it with targets — through a tether (+++JT) it mends the one the circle is drawn upon. On a Query ring it triggers when something nearby is made whole."},
+    [","] = {Letter = ",", Name = "Stride", Class = "aspect",
+        Hint = "Moves. Aim it with targets to carry them (,,,O); Yonder marks how far (,,,O>>); bind Astra to step through a fold in space (,,,*S). Inject a phial holding a place (5{#}) to send them there (,,,O5) — corked circles remember where they were drawn."},
     ["="] = {Letter = "=", Name = "Radiate", Class = "aspect",
         Hint = "Radiates. Bind an element to pour that energy outward (===% radiates decay); inject a bottled circle to send it marked (==4 with 4{ }); aim it at the offering (==_) to send that along. On a Query ring (Q=) the circle wakes when a radiance reaches it — add an element or mark to hear only that one (Q=%, Q=4). A radiance finds every listening circle, however far."},
 
@@ -73,7 +79,7 @@ module.Registry = {
     T = {Letter = "T", Name = "Tether", Class = "target", Target = "tether",
         Hint = "The connection between things. On a Query ring: the spell lasts while the tether holds."},
     S = {Letter = "S", Name = "Self", Class = "target", Target = "self",
-        Hint = "The caster — or the circle itself."},
+        Hint = "The caster — you. Aim any working at S to turn it on yourself: +++JS heals the caster, ,,,S steps the caster, KK?S steals a copy of a spell for yourself. Unaimed circles never touch their caster; S is how a spell reaches back to you."},
     O = {Letter = "O", Name = "Other", Class = "target", Target = "other",
         Hint = "Someone or something else — anything that isn't you."},
     ["#"] = {Letter = "#", Name = "Locus", Class = "target", Target = "place",
@@ -97,6 +103,8 @@ module.Registry = {
         Hint = "Ring rune. Amplifies everything inside the circle ×(1+count)."},
     I = {Letter = "I", Name = "Iterate", Class = "flow", Flow = "loop",
         Hint = "Ring rune. The circle repeats endlessly — it loops until the circle itself is destroyed."},
+    [";"] = {Letter = ";", Name = "Chain", Class = "flow", Flow = "chain",
+        Hint = "Ring rune. Where the cast lands, the circle casts itself anew from that spot — count is the most chains it may run (each mote chains on its own). Pressed directly against a Query (Q;) it instead wakes the circle when someone counters your spell."},
 
     ["("] = {Letter = "(", Name = "Widdershins", Class = "motion", Motion = "curl_ccw",
         Hint = "Bends the cast counter-clockwise as it travels. Stack for a tighter curve."},

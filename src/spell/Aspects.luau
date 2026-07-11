@@ -136,6 +136,40 @@ module.Registry = {
             end
         end,
     },
+    ["+"] = {
+        Name = "Mend",
+        Verb = "restores",
+        Fallback = "what is broken",
+        Draw = function(cv, x, y, size, color)
+            cv:strokeCircle(x, y, size * 0.5, color, 2)
+            local arm = size * 0.32
+            cv:line(x - arm, y, x + arm, y, color, 4)
+            cv:line(x, y - arm, x, y + arm, color, 4)
+            for _, corner in ipairs({{-1, -1}, {1, -1}, {-1, 1}, {1, 1}}) do
+                cv:circle(x + corner[1] * size * 0.38, y + corner[2] * size * 0.38, math.max(1, size * 0.05), color)
+            end
+        end,
+    },
+    [","] = {
+        Name = "Stride",
+        Verb = "moves",
+        Fallback = "what it touches",
+        Draw = function(cv, x, y, size, color)
+            local r = size * 0.5
+            local steps = 12
+            local points = {}
+            for i = 0, steps do
+                local t = i / steps
+                local a = math.pi + math.pi * t
+                table.insert(points, {x + r * math.cos(a) * 0.9, y + math.sin(a) * r * 0.7})
+            end
+            cv:polyline(points, color, 3)
+            cv:circle(x - r * 0.9, y, math.max(2, size * 0.08), color)
+            local tx, ty = x + r * 0.9, y
+            cv:line(tx, ty, tx - size * 0.16, ty - size * 0.14, color, 3)
+            cv:line(tx, ty, tx + size * 0.02, ty - size * 0.2, color, 3)
+        end,
+    },
     ["~"] = {
         Name = "Flux",
         Verb = "transmutes",

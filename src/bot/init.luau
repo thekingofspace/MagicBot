@@ -5,6 +5,19 @@ local Resolver = require("@src/spell/Resolver")
 local Renderer = require("@src/spell/Renderer")
 local Elements = require("@src/spell/elements")
 local Runes = require("@src/spell/Runes")
+local Helpers = require("@src/bot/helpers")
+
+local Extensions = {
+    require("@src/forge"),
+    require("@src/potion"),
+    require("@src/coin"),
+    require("@src/flag"),
+    require("@src/soup"),
+    require("@src/ale"),
+    require("@src/grimoire"),
+    require("@src/wand"),
+    require("@src/feast"),
+}
 
 local module = {}
 
@@ -54,6 +67,20 @@ local Commands = {
     },
 }
 
+local ExtensionHandlers: {[string]: (client: any, interaction: any) -> ()} = {}
+local ExtensionModals: {[string]: (client: any, interaction: any) -> ()} = {}
+for _, extension in ipairs(Extensions) do
+    for _, command in ipairs(extension.Commands or {}) do
+        table.insert(Commands, command)
+    end
+    for name, handler in pairs(extension.Handlers or {}) do
+        ExtensionHandlers[name] = handler
+    end
+    for customId, handler in pairs(extension.Modals or {}) do
+        ExtensionModals[customId] = handler
+    end
+end
+
 for _, command in ipairs(Commands) do
     -- 0 = server install, 1 = user install
     command.integration_types = {0, 1}
@@ -61,58 +88,10 @@ for _, command in ipairs(Commands) do
     command.contexts = {0, 1, 2}
 end
 
-local function ColorInt(color: {r: number, g: number, b: number}): number
-    return color.r * 65536 + color.g * 256 + color.b
-end
-
-local function Respond(client, interaction, payload)
-    return (pcall(function()
-        client:RestSend("POST", `interactions/{interaction.id}/{interaction.token}/callback`, payload)
-    end))
-end
-
-type UploadFile = {
-    filename: string,
-    contentType: string,
-    bytes: string,
-}
-
-local function EditOriginalMultipart(client, interaction, payload, files: {UploadFile})
-    local boundary = "SpellBoundary" .. cryptography.uuid()
-    local parts = {
-        `--{boundary}`,
-        `Content-Disposition: form-data; name="payload_json"`,
-        "Content-Type: application/json",
-        "",
-        serde.encode("json", payload),
-    }
-
-    for index, file in ipairs(files) do
-        table.insert(parts, `--{boundary}`)
-        table.insert(parts, `Content-Disposition: form-data; name="files[{index - 1}]"; filename="{file.filename}"`)
-        table.insert(parts, `Content-Type: {file.contentType}`)
-        table.insert(parts, "")
-        table.insert(parts, file.bytes)
-    end
-
-    table.insert(parts, `--{boundary}--`)
-    table.insert(parts, "")
-
-    return (pcall(function()
-        client:RestSend(
-            "PATCH",
-            `webhooks/{interaction.application_id}/{interaction.token}/messages/@original`,
-            table.concat(parts, "\r\n"),
-            {["Content-Type"] = `multipart/form-data; boundary={boundary}`}
-        )
-    end))
-end
-
-local function EditOriginal(client, interaction, payload)
-    return (pcall(function()
-        client:RestSend("PATCH", `webhooks/{interaction.application_id}/{interaction.token}/messages/@original`, payload)
-    end))
-end
+local ColorInt = Helpers.ColorInt
+local Respond = Helpers.Respond
+local EditOriginal = Helpers.EditOriginal
+local EditOriginalMultipart = Helpers.EditOriginalMultipart
 
 local function BuildEmbed(effect: Resolver.Effect, incantation: string)
     local element = Elements.Get(effect.Element)
@@ -152,6 +131,9 @@ local function BuildEmbed(effect: Resolver.Effect, incantation: string)
         table.insert(fields, {name = "Repeats", value = "∞", inline = true})
     elseif effect.Repeats > 0 then
         table.insert(fields, {name = "Repeats", value = `×{effect.Repeats + 1}`, inline = true})
+    end
+    if effect.Chain > 0 then
+        table.insert(fields, {name = "Chain", value = `up to ×{effect.Chain}`, inline = true})
     end
     if effect.Sustain > 0 then
         table.insert(fields, {name = "Sustain", value = `{effect.Sustain} beats`, inline = true})
@@ -256,7 +238,7 @@ local function HandleSpell(client, interaction)
 
     if not ok then
         print(`[spellbot] failed to cast: {err}`)
-        EditOriginal(client, interaction, {content = "💥 The spell fizzled — something went wrong while drawing the circle."})
+        Helpers.FailWithInput(client, interaction, "💥 The spell fizzled — something went wrong while drawing the circle.", incantation)
     end
 end
 
@@ -318,7 +300,7 @@ local function HandleSpellAdvModal(client, interaction)
 
     if not ok then
         print(`[spellbot] advanced cast failed: {err}`)
-        EditOriginal(client, interaction, {content = "💥 The spell fizzled — something went wrong while drawing the circle."})
+        Helpers.FailWithInput(client, interaction, "💥 The spell fizzled — something went wrong while drawing the circle.", incantation)
     end
 end
 
@@ -373,7 +355,7 @@ local function HandleShapeform(client, interaction)
 
     if not ok then
         print(`[spellbot] shapeform failed: {err}`)
-        EditOriginal(client, interaction, {content = "💥 The form collapsed — something went wrong."})
+        Helpers.FailWithInput(client, interaction, "💥 The form collapsed — something went wrong.", incantation)
     end
 end
 
@@ -481,7 +463,9 @@ function module.Start()
     client:On("INTERACTION_CREATE", function(interaction)
         local ok, err = pcall(function()
             if interaction.type == 2 and interaction.data then
-                if interaction.data.name == "spell" then
+                if ExtensionHandlers[interaction.data.name] then
+                    ExtensionHandlers[interaction.data.name](client, interaction)
+                elseif interaction.data.name == "spell" then
                     HandleSpell(client, interaction)
                 elseif interaction.data.name == "symbols" then
                     HandleSymbols(client, interaction)
@@ -512,6 +496,8 @@ function module.Start()
                 end
             elseif interaction.type == 5 and interaction.data and interaction.data.custom_id == "adv" then
                 HandleSpellAdvModal(client, interaction)
+            elseif interaction.type == 5 and interaction.data and ExtensionModals[interaction.data.custom_id] then
+                ExtensionModals[interaction.data.custom_id](client, interaction)
             end
         end)
         if not ok then

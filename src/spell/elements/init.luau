@@ -56,6 +56,7 @@ module.Registry = {
     Ruin = require("@src/spell/elements/Ruin"),
     Oblivion = require("@src/spell/elements/Oblivion"),
     Time = require("@src/spell/elements/Time"),
+    Mind = require("@src/spell/elements/Mind"),
     Smolder = require("@src/spell/elements/Smolder"),
     Glacier = require("@src/spell/elements/Glacier"),
     Echo = require("@src/spell/elements/Echo"),
@@ -66,9 +67,19 @@ module.Registry = {
     Eternity = require("@src/spell/elements/Eternity"),
     Stasis = require("@src/spell/elements/Stasis"),
     Erosion = require("@src/spell/elements/Erosion"),
+    Fervor = require("@src/spell/elements/Fervor"),
+    Reverie = require("@src/spell/elements/Reverie"),
+    Whisper = require("@src/spell/elements/Whisper"),
+    Resolve = require("@src/spell/elements/Resolve"),
+    Instinct = require("@src/spell/elements/Instinct"),
+    Clarity = require("@src/spell/elements/Clarity"),
+    Impulse = require("@src/spell/elements/Impulse"),
+    Memory = require("@src/spell/elements/Memory"),
+    Astral = require("@src/spell/elements/Astral"),
+    Burden = require("@src/spell/elements/Burden"),
 } :: {[string]: Types.ElementModule}
 
-module.BaseOrder = {"Arcana", "Fire", "Water", "Air", "Ground", "Life", "Light", "Volt", "Time", "Space", "Gravity", "Decay", "Ruin"}
+module.BaseOrder = {"Arcana", "Fire", "Water", "Air", "Ground", "Life", "Light", "Volt", "Time", "Space", "Gravity", "Mind", "Decay", "Ruin"}
 
 module.Corruptors = {
     Decay = true,
@@ -84,6 +95,8 @@ module.MixOrder = {
     "Nerve", "Laser", "Aurora", "Pulsar", "Smolder", "Erosion",
     "Glacier", "Echo", "Fossil", "Elder", "Twilight", "Flash",
     "Eternity", "Stasis", "Oblivion", "Singularity", "Star",
+    "Fervor", "Reverie", "Whisper", "Resolve", "Instinct",
+    "Clarity", "Impulse", "Memory", "Astral", "Burden",
 }
 
 local MixTable = {
@@ -133,6 +146,16 @@ local MixTable = {
     ["Time+Volt"] = "Flash",
     ["Space+Time"] = "Eternity",
     ["Gravity+Time"] = "Stasis",
+    ["Fire+Mind"] = "Fervor",
+    ["Mind+Water"] = "Reverie",
+    ["Air+Mind"] = "Whisper",
+    ["Ground+Mind"] = "Resolve",
+    ["Life+Mind"] = "Instinct",
+    ["Light+Mind"] = "Clarity",
+    ["Mind+Volt"] = "Impulse",
+    ["Mind+Time"] = "Memory",
+    ["Mind+Space"] = "Astral",
+    ["Gravity+Mind"] = "Burden",
 }
 
 function module.MixOf(a: string, b: string): string?

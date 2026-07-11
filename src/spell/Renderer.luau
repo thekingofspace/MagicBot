@@ -311,6 +311,19 @@ local function DrawRing(cv: Canvas, cx: number, cy: number, radius: number, run:
                 color, 2
             )
         end
+    elseif flow == "chain" then
+        local links = 14
+        for i = 0, links - 1 do
+            local a = 2 * math.pi * i / links
+            local nextA = 2 * math.pi * (i + 1) / links
+            local ox, oy = cx + radius * math.cos(a), cy + radius * math.sin(a)
+            cv:strokeCircle(ox, oy, 6, color, 2)
+            cv:line(
+                cx + (radius + 3) * math.cos(a + 0.12), cy + (radius + 3) * math.sin(a + 0.12),
+                cx + (radius - 3) * math.cos(nextA - 0.12), cy + (radius - 3) * math.sin(nextA - 0.12),
+                color, 1
+            )
+        end
     else
         for i = 0, 17 do
             local a = 2 * math.pi * i / 18

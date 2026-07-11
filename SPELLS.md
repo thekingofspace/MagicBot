@@ -4,6 +4,8 @@ A spell is a text incantation cast with `/spell`. The bot parses it, solves what
 
 **Commands**: `/spell incantation:` casts (200 runes). `/spelladv` opens a form for **long-form casting — up to 3500 runes**, with raised limits (60 clusters per circle, 5 circle depth); the readout arrives as an attached `spell.txt` below the embed, with the circle image in the embed as usual. `/symbols` lists every recognized character (no meanings). `/example` shows the general shape of a spell. `/shapeform incantation:` ignores everything but the spell's `$` clusters and renders the body itself — shaded blob, sculpted by the letters.
 
+The same rune characters also write entirely different crafts with their own commands and languages: `/forge` (weapons — WEAPONS.md), `/potion` (brews — POTIONS.md), `/coin` (minting — COINS.md), `/flag` (banners — FLAGS.md).
+
 ---
 
 ## 1. Grammar
@@ -16,7 +18,8 @@ cluster := rune+                     -- separated by spaces
 ring    := runes written directly against a border
 ```
 
-- Runes are letters `A–Z`, the marks `* @ ~ # ( ) . & ! ^ % / _ : - ? < > $`, and digits `0–9`. Case-insensitive; any whitespace separates clusters.
+- Runes are letters `A–Z`, the marks `* @ ~ # ( ) . & ! ^ % / _ : - ? < > $ + ' , ;`, and digits `0–9`. Case-insensitive; any whitespace separates clusters.
+- **Smart punctuation is forgiven**: phones autocorrect `--` into an em-dash and `'` into a curly quote — the parser folds `—` `–` `−` back into hyphens, curly quotes back into `'`, and odd spaces into plain ones before reading a single rune. `{—-WWWB}` casts exactly as `{---WWWB}`.
 - **Limits**: 200 characters total, circles nest 3 deep, 10 clusters per circle. Cluster length and ring length are unlimited (within the 200).
 - **Rings**: runes *pressed against* a border wrap that circle — `PP{AAA}` rings the border. Inside a circle, a space breaks the bond (`PP {AAA}` = a Pulse cluster plus an unringed inner circle). At the top level all runes before the first border are rings, spaced or not.
 - **Unstable border**: `[ ]` casts that circle unstable (§10). Border types nest freely in each other; mismatched pairs (`{AAA]`) are an error, as are runes after the final border, stray characters, and missing borders. `{}` is a valid empty circle (*"An empty circle — nothing resolves."*).
@@ -129,8 +132,9 @@ Every element works four ways: a **cluster** (`BBB`) is a sigil source in the co
 | `W` | Water | Tide | | `:` | Time | Aeon |
 | `Z` | Air | Zephyr | | `*` | Space | Astra |
 | `G` | Ground | Stone | | `@` | Gravity | Vortex |
-| `J` | Life | Jiva | | `%` | Decay (corruptor) | Rot |
-| `!` | Light | Ray | | `/` | Ruin (corruptor) | Rend |
+| `J` | Life | Jiva | | `'` | Mind (thought) | Muse |
+| `!` | Light | Ray | | `%` | Decay (corruptor) | Rot |
+| | | | | `/` | Ruin (corruptor) | Rend |
 
 Circles with no element resolve as **Arcana**: raw force pushes and wards (*"The forces balance inward — the circle holds as a ward"*), or *"An empty circle — nothing resolves"* when there's nothing at all.
 
@@ -138,17 +142,18 @@ Circles with no element resolve as **Arcana**: raw force pushes and wards (*"The
 
 If the second-strongest element has **at least half** the power of the strongest, the two fuse. With three or more, only the top two bind — the third *"slips away"* (a note names it). Weaker seconds get a note explaining the half-power rule. Every base pair fuses:
 
-| + | Water | Air | Ground | Life | Light | Volt | Time | Space | Gravity |
-|---|-------|-----|--------|------|-------|------|------|-------|---------|
-| **Fire** | Steam | Wildfire | Magma | Ash | Solar | Plasma | Smolder | Star | Meteor |
-| **Water** | — | Mist | Mud | Bloom | Prism | Storm | Erosion | Nebula | Abyss |
-| **Air** | | — | Sandstorm | Spirit | Mirage | Ion | Echo | Aether | Tempest |
-| **Ground** | | | — | Verdure | Crystal | Magnet | Fossil | Moon | Bedrock |
-| **Life** | | | | — | Dawn | Nerve | Elder | Dream | Wither |
-| **Light** | | | | | — | Laser | Twilight | Beacon | Eclipse |
-| **Volt** | | | | | | — | Flash | Aurora | Pulsar |
-| **Time** | | | | | | | — | Eternity | Stasis |
-| **Space** | | | | | | | | — | Singularity |
+| + | Water | Air | Ground | Life | Light | Volt | Time | Space | Gravity | Mind |
+|---|-------|-----|--------|------|-------|------|------|-------|---------|------|
+| **Fire** | Steam | Wildfire | Magma | Ash | Solar | Plasma | Smolder | Star | Meteor | Fervor |
+| **Water** | — | Mist | Mud | Bloom | Prism | Storm | Erosion | Nebula | Abyss | Reverie |
+| **Air** | | — | Sandstorm | Spirit | Mirage | Ion | Echo | Aether | Tempest | Whisper |
+| **Ground** | | | — | Verdure | Crystal | Magnet | Fossil | Moon | Bedrock | Resolve |
+| **Life** | | | | — | Dawn | Nerve | Elder | Dream | Wither | Instinct |
+| **Light** | | | | | — | Laser | Twilight | Beacon | Eclipse | Clarity |
+| **Volt** | | | | | | — | Flash | Aurora | Pulsar | Impulse |
+| **Time** | | | | | | | — | Eternity | Stasis | Memory |
+| **Space** | | | | | | | | — | Singularity | Astral |
+| **Gravity** | | | | | | | | | — | Burden |
 
 Special cases: **Decay + Ruin → Oblivion** (the only corruptor mix). **Glacier** forms by aspect transform, not pair-mix (§8). Mixing pools *everything* — sigils, bindings, ring infusions, and elements merged up from inner circles — so an inner water circle inside a fire circle makes Steam.
 
@@ -179,12 +184,61 @@ Aspects take border slots (they don't push — which also makes them ideal aimin
 | `X` | Weave | links | what it binds | a bond is woven nearby |
 | `~` | Flux | transmutes | what it touches | something changes nearby |
 | `-` | Hoar | freezes | the air around it | cold sets in nearby |
+| `+` | Mend | restores | what is broken | something nearby is made whole |
+| `,` | Stride | moves | what it touches | something nearby is carried away |
+
+### Mend — the `+` rune (restoration)
+
+Mend restores. What it pours back is chosen by the bound element; targets choose who. Verified castings:
+
+| Casting | Readout |
+|---|---|
+| `{+++JO}` | *Mend knits life back into other* — **the heal** |
+| `{+++JS}` | *Mend knits life back into self* — heal the caster |
+| `{XXTO +++JT}` | *Weave links other, tether. Mend knits life back into tether* — forge the tether, then heal down it: **the person the circle is drawn on mends while the bond holds**. Ring it `PPPQT` for waves of healing while the tether lasts. |
+| `{+++:_}` | *Mend winds offering back to its former state* — **time-restoration**: a broken thing on the altar is wound back to what it was |
+| `{+++'O}` | *Mend makes whole the mind of other* — heal memories, calm madness |
+| `{++O}` | *Mend restores other* — unbound, it simply repairs |
+
+Bind any other element to replenish it (`+++BV` restores fire within a vessel — refuel a lantern). `Q+` rings trigger on nearby mending; `NQ+` runs until something is made whole.
+
+### Mind workings — the `'` rune everywhere
+
+Mind (`'`, Muse) binds to every aspect and turns it inward on thought itself. The full verified toolkit:
+
+| Casting | Readout | What it is |
+|---|---|---|
+| `{CCC'}` | *Craft shapes what the caster holds in mind* | **cast what you're thinking of** — create-matter from imagination |
+| `{FFF'O}` | *Fathom reads the thoughts of other* | mind reading |
+| `{DDD'O}` | *Doom unmakes memories within other* | make someone forget |
+| `{~~~'OE}` | *Flux remakes essence, other into what the caster pictures* | rewrite what something *is* — transform a thing, change a species |
+| `{KK'OS}` | *Kindred copies the thoughts of other, self* | take a mind from a target for yourself |
+| `{MM'O}` | *Missive carries a thought straight into the mind of other* | telepathy |
+| `{XX'VO}` | *Weave links the minds of other, vessel* | a mind-link |
+| `{+++'O}` | *Mend makes whole the mind of other* | mind-healing |
+| `{$$' …}` | *It takes shape (2 spans) — whatever the caster's mind pictures* | **shapeform from mind** — no letters to draw, the form comes straight from imagination |
+
+Standalone `'''` clusters are thought sigils (*Thought washes outward…*); `Q'` rings wake **when a thinking mind draws near** (`IQ'{DDD'O RRR}` is the sentry that wipes the memory of anyone who approaches); `INQ'S{ }` runs until the spell outweighs the mind. Mind mixes with every base element (see the table — Memory, Astral, Reverie…).
 
 **What a working acts on**, in priority order: ① its own target modifiers → ② the spell's marked targets (standalone target clusters, wherever they are) → ③ its bound element → ④ the fallback. With both an element and targets it reads *"{element} within {targets}"* — `~~~GO` → *Flux transmutes ground within other*. Targets marked with no working at all read *"Marked: … — no working binds them."*
 
 **Aspect transforms** — some workings change the spell's element wholesale. Currently one: **Hoar over a Water spell → Glacier** (`{----O WW}` → *The glacier freezes over evenly… Hoar freezes other*). The table is extensible in `Resolver.luau`.
 
 **Proven patterns**: seek-then-strike (`FFF^O DDD^OE` — Fathom aims Doom at the spark in someone); anchor (`XXTO`); broadcast (`MMMMM ZZZZ RRR OO` — a loud noise is Missive riding air); purge-and-restore (`CCCCJOE DDD%OE` — the healing pair); make-the-world (`CCC*# CCCW CCCG` — craft space, water, and ground into a place).
+
+### Stride & held places — the `,` rune (movement)
+
+Stride moves its targets through the world. Three verified ways to say *where*:
+
+| Casting | Readout |
+|---|---|
+| `{,,,O >>}` | *Stride moves other, 2 spans along its aim* — **local**: Yonder marks the distance, slot geometry aims it |
+| `{,,,*S}` | *Stride steps self through a fold in space* — bound to Astra it's a **blink through the void** (a space cut-out); `S` moves the caster |
+| `{5{#} ,,,O5}` | *Stride moves other to the place held in phial 5* — **global**: a corked circle holding a Locus (`5{#}`) **captures the position where it is drawn**; injecting it resolves the destination |
+
+**Held places**: `5{#}` reads back as *Phial 5: it holds fast to the spot where it was drawn.* Store one, walk away, and return later — `{5{#} ,,,S5}` = *Stride moves self to the place held in phial 5.* Works on anything a target can name: `,,,_5` sends the offering there. `Q,` rings trigger when something nearby is carried away.
+
+**The global teleport** combines all three: `{5{#} ,,,*S5}` → *Stride steps self through a fold in space to the place held in phial 5.* Draw it as a reusable hearthstone — `IQ&{5{#} ,,,*S5}` → *Held until it is shaken — Stride steps self through a fold in space to the place held in phial 5. It repeats endlessly* — an object that remembers where it was made and folds you back there every time you shake it. `,,,*O5` sends someone else instead; put both in one circle for a tandem jump.
 
 ## 9. Targets, tethers, triggers & conditions
 
@@ -195,7 +249,7 @@ Aspects take border slots (they don't push — which also makes them ideal aimin
 | `V` | vessel | a container / an object's body | **trigger: it is touched** |
 | `E` | essence | what's inside — contents, cells, the stuff of a thing | condition: while the essence holds |
 | `T` | tether | the bond to the thing it's cast on | condition: while the tether holds |
-| `S` | self | the caster / the circle itself | condition: while the self holds |
+| `S` | self | **the caster — you.** Any working aimed at `S` turns on yourself: `+++JS` heals the caster, `,,,S5` steps the caster to a held place, `KK?S` steals a spell-copy for yourself. Unaimed circles never touch their caster; `S` is how a spell reaches back to you | condition: while the self holds |
 | `O` | other | anyone or anything else | condition: while the other holds |
 | `#` | place | the ground it's drawn on | condition: while the place holds |
 | `_` | offering | whatever is placed within the circle | condition: while the offering rests within |
@@ -219,6 +273,10 @@ A `Q` makes its circle conditional; the rune paired with it on the ring picks th
 | `Q.` | it is broken (crack-mark ring) |
 | `Q(` / `Q)` | it is moved — anti-tamper (motion-arrow ring) |
 | `Q?` | **a spell is cast upon it** — counterspelling (incoming-circle ring; see below) |
+| `Q;` | **it is countered** — wakes when someone counterspells *your* spell (§10, Chain) |
+| `Q'` | a thinking mind draws near |
+| `Q+` | something nearby is made whole |
+| `Q,` | something nearby is carried away |
 
 Triggered circles lead their readout with **"Held until … —"**; a triggered *inner* circle is reported as a **`Payload:`**. Ordnance from the harness: `{AAAAB QA[BBBBB RRRR]}` (bolt with impact warhead), `QV[XXT# BBBBB GGG RRRR ..]` (landmine), `Q([XXTV BBBBB RRRR .. DDO]` (exploding chest), `QR[BBBB RRR]` (proximity mine), `QM{RRR GGG ~~~GO}` (speech-triggered petrifier).
 
@@ -275,11 +333,24 @@ The consumed `N` does not flip direction; an `N` elsewhere in the rings still do
 |------|------|--------|----------------|
 | `P` | Pulse | repeats | fires ×(count+1) total |
 | `I` | Iterate | endless | loops until the circle is destroyed (overrides Pulse in the readout; embed shows ∞) |
+| `;` | Chain | recasts where it lands | see below |
 | `H` | Hold | sustains | *count* beats (the time unit; ~1s each — "30 seconds" is thirty H's) |
 | `Y` | Yield | delays | waits *count* beats before firing — a fuse |
 | `N` | Null | inverts | flips the push 180°; two cancel. `N{@@@@@}` = inverted gravity |
 | `U` | Surge | amplifies | ×(1+count) on element power and arrow force |
 | `Q` | Query | conditional | §9 |
+
+### Chain — the `;` ring
+
+`;` makes a spell **recast itself from wherever its cast lands**, count = the most chains it may run (your max-recursion dial). Verified:
+
+| Casting | Readout |
+|---|---|
+| `;;;{AAAAB QA[BBBB RRR]}` | *Fire shoots out at 277° (south)… Where it lands, the spell casts itself anew — up to 3 chains.* — a bolt whose every impact fires the whole spell again, warhead included |
+| `;;;{AAAB.. QA[BBB]}` | *…It scatters into 3 motes. Where each mote lands, the spell casts itself anew — up to 3 chains apiece.* — **every mote chains on its own** |
+| `;;NQ:{AAAB}` | *…up to 2 chains. It runs until its hour comes.* — chains stop early when the breaker condition is met |
+
+**Chain-on-counter — `Q;`**: a Chain pressed directly against a Query is the counter-sense — the circle wakes **when someone counters your spell**. `IQ;{^^^^^ RRR}` → *Held until it is countered — Lightning crackles outward on all sides… It repeats endlessly* — every counterspell thrown at you spawns lightning. Stack both: `;;Q;{^^^^ RRR}` chains twice more on top of each counter. The embed carries a `Chain` field (`up to ×N`).
 
 Also legal on rings: **elements** (plain infusion; trigger with Q), **R** (spread), **motion** (applies), **digits** (phial ids, §11). Anything else idles with a note. Flow runes written *inside* a circle behave as rings too. Rings apply to *their own* circle before it merges — an inverted inner circle pushes backward into the pool; a surged phial injects hot. The render draws each ring with a unique pattern (dot-pairs, loops, double line, dots, dash-dot, inward chevrons, radial ticks) but only the first three rings per circle; resolution counts them all.
 
@@ -337,6 +408,12 @@ Sub-notes are labeled by role: `Inner circle:` (plain), `Payload:` (triggered), 
 | `I{CCCCCG GG $$VHII CCCJJ}` | the golem — Verdure; crafted ground given crafted life, shaped 2 spans: *a wedge, then a bridged pair of pillars, then a straight pillar ×2*, animated endlessly. |
 | `INQ.{XXTV IUQ?{FFF^O DDD^? AAAA1< 1NU{^^^^^^}}}` | the lightning shield talisman — wakes when a spell targets you, unmakes its volt, returns it doubled *back at its source*; dies when the paper rips. |
 | `IUUNYYHHQM[…]` (magnum opus) | voice-triggered endless inverted unstable plasma storm with a beacon tint, full rot, three motions, a phial, a two-stage payload, and a glacier circle. |
+| `PPPQT{XXTO +++JT}` | the tether-heal — Weave forges the bond, Mend pours life down it in waves while it holds. |
+| `IQ'{DDD'O RRR}` | the sentry of forgetting — wakes when a thinking mind draws near, wipes its memories, forever. |
+| `{5{#} ,,,S5}` | the way home — a corked circle remembers where it was drawn; Stride steps the caster back to it. |
+| `IQ&{5{#} ,,,*S5}` | the hearthstone — a global teleport: shake it anywhere, and it folds you through space back to where it was made, endlessly. |
+| `;;;{AAAB.. QA[BBB]}` | chain-fire — three motes, each recasting the whole spell where it lands, up to 3 chains apiece. |
+| `IQ;{^^^^^ RRR}` | the spite-ward — every counterspell thrown at your magic answers with lightning, endlessly. |
 
 ## 15. Extending the system
 

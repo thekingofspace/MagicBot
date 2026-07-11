@@ -16,9 +16,37 @@ export type Spell = {
 }
 
 local MaxLength = 200
-local SymbolRunes = "*@~#()&.!^%/_:-?<$>="
+local SymbolRunes = "*@~#()&.!^%/_:-?<$>=+',;"
 
 local module = {}
+
+local SmartPunctuation = {
+    ["\u{2014}"] = "--",
+    ["\u{2013}"] = "-",
+    ["\u{2015}"] = "--",
+    ["\u{2212}"] = "-",
+    ["\u{2018}"] = "'",
+    ["\u{2019}"] = "'",
+    ["\u{201B}"] = "'",
+    ["\u{2032}"] = "'",
+    ["\u{00A0}"] = " ",
+    ["\u{202F}"] = " ",
+    ["\u{3000}"] = " ",
+}
+
+local function Normalize(text: string): string
+    return (string.gsub(text, "[\194-\244][\128-\191]*", function(sequence)
+        return SmartPunctuation[sequence] or sequence
+    end))
+end
+
+local function CharAt(text: string, index: number): string
+    local from, to = string.find(text, utf8.charpattern, index)
+    if from == index and to then
+        return string.sub(text, from, to)
+    end
+    return "an unreadable mark"
+end
 
 local function IsRuneChar(char: string): boolean
     return string.match(char, "%u") ~= nil
@@ -49,7 +77,7 @@ function module.Parse(text: string, maxLength: number?): (Spell?, string?)
         return nil, `That incantation is too long (max {limit} characters).`
     end
 
-    local upper = string.upper(text)
+    local upper = string.upper(Normalize(text))
     local index = 1
     local length = #upper
 
@@ -107,7 +135,7 @@ function module.Parse(text: string, maxLength: number?): (Spell?, string?)
             elseif IsRuneChar(char) then
                 buffer ..= char
             else
-                return nil, `Only rune letters A–Z, the marks {SymbolRunes}, digits, spaces, and borders belong in a spell (found "{char}").`
+                return nil, `Only rune letters A–Z, the marks {SymbolRunes}, digits, spaces, and borders belong in a spell (found "{CharAt(upper, index - 1)}").`
             end
         end
 
@@ -127,7 +155,7 @@ function module.Parse(text: string, maxLength: number?): (Spell?, string?)
         elseif string.match(char, "%s") then
             index += 1
         else
-            return nil, `Only rune letters A–Z, the marks {SymbolRunes}, digits, spaces, and borders belong in a spell (found "{char}").`
+            return nil, `Only rune letters A–Z, the marks {SymbolRunes}, digits, spaces, and borders belong in a spell (found "{CharAt(upper, index)}").`
         end
     end
 

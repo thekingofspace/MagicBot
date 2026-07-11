@@ -4,4 +4,4 @@
 # New tools can be added by running `rokit add <tool>` in a terminal.
 
 [tools]
-lehua = "thekingofspace/LehuaLang@0.2.14"
+lehua = "thekingofspace/LehuaLang@0.3.0"
